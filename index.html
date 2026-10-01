@@ -631,7 +631,21 @@
 <script>
 /* ================= НАСТРОЙКА ================= */
 const ADMIN_PASS = "kva2026";   // ← пароль для входа в панель управления (измените!)
-const SITE_VERSION = "v2.1 · 01.10.2026";   // ← версия сайта, показывается в подвале
+const SITE_VERSION = "v2.1";   // ← номер версии сайта (меняется вручную при больших обновлениях)
+const VER_KEY = "kva_updated";
+function versionText(){
+  let t = 0;
+  try{ t = Number(localStorage.getItem(VER_KEY)) || 0; }catch(e){}
+  const d = new Date(t);
+  const pad = n => String(n).padStart(2,'0');
+  return t
+    ? SITE_VERSION + " · обновлено " + pad(d.getDate()) + "." + pad(d.getMonth()+1) + "." + d.getFullYear() + " " + pad(d.getHours()) + ":" + pad(d.getMinutes())
+    : SITE_VERSION;
+}
+function refreshVersion(){
+  const el = document.getElementById('site-version');
+  if(el) el.textContent = versionText();
+}
 const NOTIFY_EMAILS = ["web21veka.mult@gmail.com", "viktorykon2111@gmail.com"]; // уведомления
 const STORE_KEY  = "kva_paintings";
 const ORDERS_KEY = "kva_orders";
@@ -672,6 +686,7 @@ let nextPoll = polls.reduce((m,p)=>Math.max(m,p.id||0),0)+1;
 let nextChat = pchats.reduce((m,c)=>Math.max(m,c.id||0),0)+1;
 
 function saveAll(){
+  try{ localStorage.setItem(VER_KEY, Date.now()); }catch(e){}
   localStorage.setItem(STORE_KEY, JSON.stringify(paintings));
   localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
   localStorage.setItem(AUC_KEY, JSON.stringify(auctions));
@@ -735,6 +750,18 @@ function mergeById(serverArr, localArr){
   return [...map.values()];
 }
 const live = a => (a || []).filter(x => !x.deleted);
+/* Аккаунты сливаются по телефону (у них нет id, иначе mergeById их терял бы) */
+function mergeUsers(serverUsers, localUsers){
+  const map = new Map();
+  (localUsers || []).forEach(u => { if(u && u.phone) map.set(u.phone, u); });
+  (serverUsers || []).forEach(s => {
+    if(!s || !s.phone) return;
+    const l = map.get(s.phone);
+    if(!l){ map.set(s.phone, s); return; }
+    map.set(s.phone, Object.assign({}, s, { avatar: s.avatar || l.avatar || null }));
+  });
+  return [...map.values()];
+}
 
 function mergePolls(serverPolls, localPolls){
   serverPolls = serverPolls || []; localPolls = localPolls || [];
@@ -760,6 +787,7 @@ function refreshAllUI(){
   }
   renderUserLink();
   renderProfile();
+  refreshVersion();
 }
 function applyRemoteState(srv){
   if(!srv || typeof srv !== "object") return;
@@ -769,7 +797,7 @@ function applyRemoteState(srv){
   reviews   = mergeById(srv.reviews, reviews);
   polls     = mergePolls(srv.polls, polls);
   pchats    = mergeById(srv.chats, pchats);
-  users     = mergeById(srv.users, users);
+  users     = mergeUsers(srv.users, users);
   nextId   = paintings.reduce((m,p)=>Math.max(m,p.id||0),0)+1;
   nextOrd  = orders.reduce((m,o)=>Math.max(m,o.id||0),0)+1;
   nextAuc  = auctions.reduce((m,a)=>Math.max(m,a.id||0),0)+1;
@@ -1951,7 +1979,7 @@ document.getElementById('load-backup').addEventListener('change', e=>{
   e.target.value = '';
 });
 
-document.getElementById('site-version').textContent = SITE_VERSION;
+refreshVersion();
 
 /* ================= СТАРТ ================= */
 drawFrogsInput();
@@ -1971,11 +1999,13 @@ if(u0){
   if(!u0.createdAt){ u0.createdAt = nowTime(); saveAll(); }
 }
 /* Восстановление входа: если сессия есть, но аккаунт ещё не подтянулся с сервера — ждём синхронизации */
-if(BACKEND_ON && localStorage.getItem(SESSION_KEY)){
-  setTimeout(()=>{
-    const u = currentUser();
-    if(u){ renderUserLink(); renderProfile(); }
-  }, 2500);
+function restoreSessionUI(){
+  const u = currentUser();
+  if(u){ renderUserLink(); renderProfile(); }
+}
+if(localStorage.getItem(SESSION_KEY)){
+  setTimeout(restoreSessionUI, 2500);
+  setTimeout(restoreSessionUI, 6000);
 }
 </script>
 </body>
