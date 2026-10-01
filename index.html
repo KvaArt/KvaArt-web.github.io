@@ -336,12 +336,14 @@
       <p class="sub">Нажмите на карточку, чтобы открыть картину и купить её отдельно.</p>
       <div class="grid" id="grid"></div>
       <p class="empty" id="empty" style="display:none">Пока нет ни одной картины. Добавьте первую через панель управления (ссылка внизу страницы).</p>
+      <p class="empty" id="loading-sale" style="display:none">⏳ Загружаем работы...</p>
     </div>
 
     <div class="fold" id="fold-sold" style="display:none">
       <p class="sub">Работы, которые уже нашли своих владельцев.</p>
       <div class="grid" id="sold-grid"></div>
       <p class="empty" id="sold-empty" style="display:none">Пока ни одна картина не куплена.</p>
+      <p class="empty" id="loading-sold" style="display:none">⏳ Загружаем...</p>
     </div>
 
     <div class="fold" id="fold-auction" style="display:none">
@@ -363,6 +365,7 @@
     <p class="sub">Уникальные предметы, сделанные вручную: декор, подарки, сувениры и многое другое. Нажмите на карточку, чтобы подробнее.</p>
     <div class="grid" id="expo-grid"></div>
     <p class="empty" id="expo-empty" style="display:none">Выставка пока пуста.</p>
+    <p class="empty" id="loading-expo" style="display:none">⏳ Загружаем...</p>
     <div class="home-note" style="margin:30px 0 0">
       🖐 <b>Хотите выставить свою работу?</b> Размещаем работы гостей за договорную плату — напишите администратору в личном чате на вкладке «Контакты» или на почту.
     </div>
@@ -815,13 +818,15 @@ async function backendPull(){
     const r = await fetch(REST_URL + "?id=eq.1&select=data", { headers: backendHeaders() });
     if(!r.ok) return;
     const rows = await r.json();
-    if(!rows || !rows.length || !rows[0].data){ await backendPush(); return; }
+    if(!rows || !rows.length || !rows[0].data){ await backendPush(); firstPullDone = true; renderGallery(); renderSold(); renderExpo(); return; }
     applyRemoteState(rows[0].data);
+    firstPullDone = true;
   }catch(e){}
 }
+let firstPullDone = false;
 if(BACKEND_ON){
-  setTimeout(backendPull, 1500);
-  setInterval(backendPull, 12000);
+  backendPull();
+  setInterval(backendPull, 6000);
   document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) backendPull(); });
 }
 
@@ -966,7 +971,10 @@ function renderGallery(){
     c.onclick = ()=>openPainting(p.id);
     grid.appendChild(c);
   });
-  document.getElementById('empty').style.display = avail.length ? 'none' : 'block';
+  const loading = BACKEND_ON && !firstPullDone;
+  const le = document.getElementById('loading-sale');
+  if(le) le.style.display = loading ? 'block' : 'none';
+  document.getElementById('empty').style.display = (!loading && !avail.length) ? 'block' : 'none';
   document.getElementById('cnt').textContent = avail.length;
 }
 function renderSold(){
@@ -980,7 +988,10 @@ function renderSold(){
     c.onclick = ()=> p.craft ? openCraft(p.id) : openPainting(p.id);
     sg.appendChild(c);
   });
-  document.getElementById('sold-empty').style.display = sold.length ? 'none' : 'block';
+  const loading = BACKEND_ON && !firstPullDone;
+  const le = document.getElementById('loading-sold');
+  if(le) le.style.display = loading ? 'block' : 'none';
+  document.getElementById('sold-empty').style.display = (!loading && !sold.length) ? 'block' : 'none';
 }
 function renderExpo(){
   const eg = document.getElementById('expo-grid');
@@ -993,7 +1004,10 @@ function renderExpo(){
     c.onclick = ()=>openCraft(p.id);
     eg.appendChild(c);
   });
-  document.getElementById('expo-empty').style.display = expo.length ? 'none' : 'block';
+  const loading = BACKEND_ON && !firstPullDone;
+  const le = document.getElementById('loading-expo');
+  if(le) le.style.display = loading ? 'block' : 'none';
+  document.getElementById('expo-empty').style.display = (!loading && !expo.length) ? 'block' : 'none';
 }
 
 /* ================= СТРАНИЦА КАРТИНЫ ================= */
