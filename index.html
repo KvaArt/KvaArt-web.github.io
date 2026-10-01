@@ -508,6 +508,7 @@
     Картины в единственном экземпляре · только оригиналы по фото · © 2026
     <a href="#" id="admin-link">⚙ Управление</a>
   </div>
+  <div id="site-version" style="opacity:.65;font-size:.8rem"></div>
 </footer>
 
 <div class="toast" id="toast"></div>
@@ -630,6 +631,7 @@
 <script>
 /* ================= НАСТРОЙКА ================= */
 const ADMIN_PASS = "kva2026";   // ← пароль для входа в панель управления (измените!)
+const SITE_VERSION = "v2.1 · 01.10.2026";   // ← версия сайта, показывается в подвале
 const NOTIFY_EMAILS = ["web21veka.mult@gmail.com", "viktorykon2111@gmail.com"]; // уведомления
 const STORE_KEY  = "kva_paintings";
 const ORDERS_KEY = "kva_orders";
@@ -1948,6 +1950,8 @@ document.getElementById('load-backup').addEventListener('change', e=>{
   r.readAsText(f);
   e.target.value = '';
 });
+
+document.getElementById('site-version').textContent = SITE_VERSION;
 
 /* ================= СТАРТ ================= */
 drawFrogsInput();
