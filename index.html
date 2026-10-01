@@ -274,6 +274,8 @@
   .order-card .oc-head small{color:var(--muted)}
   .order-card .chat-msgs{max-height:200px}
 </style>
+<base target="_blank">
+<base target="_blank">
 </head>
 <body>
 
@@ -754,6 +756,8 @@ function refreshAllUI(){
     renderAdminList(); renderOrdersAdmin(); renderChatsAdmin(); renderReviewsAdmin();
     renderAuctionsAdmin(); renderPollsAdmin(); fillAuctionSelect(); fillPollChecks(); renderStats();
   }
+  renderUserLink();
+  renderProfile();
 }
 function applyRemoteState(srv){
   if(!srv || typeof srv !== "object") return;
@@ -1473,6 +1477,7 @@ document.getElementById('form-reg').addEventListener('submit', e=>{
     'reg|' + phone + '|' + Date.now());
   localStorage.setItem(SESSION_KEY, phone);
   saveAll(); renderUserLink(); renderProfile(); afterAuth();
+  if (BACKEND_ON) backendPush();
   authModal.classList.remove('open');
   toast(`Добро пожаловать, ${name}! ✦`);
 });
@@ -1960,6 +1965,13 @@ const u0 = currentUser();
 if(u0){
   document.getElementById('rv-name').value = u0.name;
   if(!u0.createdAt){ u0.createdAt = nowTime(); saveAll(); }
+}
+/* Восстановление входа: если сессия есть, но аккаунт ещё не подтянулся с сервера — ждём синхронизации */
+if(BACKEND_ON && localStorage.getItem(SESSION_KEY)){
+  setTimeout(()=>{
+    const u = currentUser();
+    if(u){ renderUserLink(); renderProfile(); }
+  }, 2500);
 }
 </script>
 </body>
